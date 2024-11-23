@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<title>Личный кабинет для B2B клиентов - Компания Дм</title>
+		<meta charset="UTF-8">
+		<meta name="format-detection" content="telephone=no">
+		<link rel="stylesheet" href="css/style.css">
+		<!-- <link rel="shortcut icon" href="favicon.ico"> -->
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		
+	</head>
+	<body>
+		<div class="wrapper">
+			<header id="header" class="header">
+	<div class="container">
+		<div class="header__row">
+			<div class="col-lg">
+				<div class="block-item block-item__logo-flex d-flex">
+					<div class="block-item__logo">
+						<a href="#" class="logo__svg"></a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</header>
+
+			<!-- Секция -->
+			<section id="adnin-form" class="adnin-form">
+				<div class="container">
+					<div class="row">
+						<div class="col-lg">
+							<div id = "login_form" class="block-adnin">
+
+							<div class="block-adnin__title">
+								<h2>
+									Платформа для B2B клиентов <br> 
+									ООО "Компании ДМ"
+								</h2>
+							</div>		
+							<form class="block__form form-block" action="#">
+ 								<div  class="form-block__item">
+								
+									<label class = "input-label input-login-label" for = "input-login">
+										<input type="text" name="form[]" placeholder="Логин" class="input input-login" id = "input-login" v-model="login" autocomplete="off">
+									</label>  
+									
+									<label class = "input-label input-lock-label" for = "input-lock">
+										<input type="password" name="form[]" placeholder="Пароль" class="input input-lock" id = "input-lock" v-model="password" autocomplete="off">
+									</label>  
+									<button type="button" @click = "checkPass" class="enter-btn form-block__btn btn">Войти в сервис</button>
+									
+								</div>
+
+							</form>
+								<div v-show = "errorMsgShow" class="error_msg" style = "display: none;"> 
+									Неверный логин и/или пароль
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+			
+
+			
+			<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+			<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+			<script src="js/main.js"></script>
+
+			<script>
+				var loginForm = new Vue({
+					el: '#login_form',
+					data: {
+						login: '',
+						password: '',
+						commandID: 'getToken',
+						errorMsgShow: false,
+						linc: 'http://dm-company.ru/netlab/service.php'
+					},
+
+					created: function() { 
+						let token = getCookie('nltoken'); 
+
+						localStorage.setItem("token", token);
+						
+						if (token != undefined)
+						{
+							document.location.href = "workpanel.html"
+						}	
+					},
+
+					methods:{
+						checkPass() {
+						if ((this.login == "")||(this.password == "")){
+							this.errorMsgShow = true;
+							return;
+						}
+
+						axios.get(this.linc,{
+							params: {
+							username:this.login,
+							password:this.password,
+							commandId:this.commandID
+							}
+						})
+						.then((response) => {
+								if (response.data == null) {
+									this.errorMsgShow = true;
+								} else {
+								
+								
+								document.cookie = "nltoken="+response.data.tokeninfo.token+"; expires=" + response.data.tokeninfo.expiredIn;
+								
+								localStorage.setItem("token", response.data.tokeninfo.token);
+
+								this.errorMsgShow = false;
+								
+								localStorage.setItem("companyLogin", this.login);
+								localStorage.setItem("companyPriceColl", response.data.userinfo.priceCell);
+								localStorage.setItem("companyPriceGrad", JSON.stringify(response.data.userinfo.priceGraduation));
+
+								localStorage.removeItem("companyId");
+								localStorage.removeItem("companyName");
+								
+								document.location.href = "workpanel.html"
+								}
+						})
+						.catch(function (error) {
+							// handle error
+							console.log(error);
+						})
+						}
+					}  
+					});
+			</script>
+
+	</body>
+</html>

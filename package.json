@@ -1,0 +1,34 @@
+{
+  "name": "dm_b2b_api",
+  "version": "1.0.1",
+  "description": "Личный кабинет для B2B клиентов компании DM",
+  "main": "index.html",
+  "scripts": {
+    "start": "browser-sync start --server src --no-notify --no-ui --cwd src --files *.html,css/**/*,js/**/*",
+    "test": "editorconfig-checker",
+    "html": "html-minifier --remove-comments --collapse-whitespace --input-dir src --output-dir dist --file-ext html",
+    "styles": "postcss src/css/style.css --use postcss-import --use postcss-csso --no-map --output dist/css/style.css",
+    "imgcopy": "xcopy src\\img dist\\img /H /Y /C /R /S /I",
+    "jscopy": "xcopy src\\js dist\\js /H /Y /C /R /S /I",
+    "build": "npm run html && npm run styles && npm run imgcopy && npm run jscopy",
+    "deploy_old": "cd dist && scp -r /dist asmi-studio@asmi-studio.myjino.ru:domains/asmi-studio.myjino.ru/",
+    "deploy": "cd dist && scp -r * kirillov@ssh.kirillov.nichost.ru:b2b.dm-company.ru/docs/",
+    "deploy_src": "cd src && scp -r * kirillov@ssh.kirillov.nichost.ru:b2b.dm-company.ru/docs/"
+  },
+  "keywords": [
+    "web",
+    "html"
+  ],
+  "author": "Asmi-Studio",
+  "license": "ISC",
+  "dependencies": {
+    "browser-sync": "^2.26.12",
+    "editorconfig-checker": "^3.1.0",
+    "postcss-csso": "^4.0.0",
+    "postcss-import": "^12.0.1"
+  },
+  "devDependencies": {
+    "postcss": "^8.0.8",
+    "postcss-cli": "^7.1.2"
+  }
+}

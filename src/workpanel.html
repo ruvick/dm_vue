@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<title>Каталог продукции - Компания Дм</title>
+		<meta charset="UTF-8">
+		<meta name="format-detection" content="telephone=no">
+		<link rel="stylesheet" href="css/style.css">
+
+		<link rel="icon" type="image/png" sizes="256x256" href="img/favicons/icon256.png">
+  		<link rel="icon" type="image/png" sizes="128x128" href="img/favicons/icon128.png">
+  		<link rel="icon" type="image/png" sizes="64x64" href="img/favicons/icon64.png">
+  		<link rel="icon" type="image/png" sizes="32x32" href="img/favicons/icon32.png">
+  		<link rel="icon" type="image/png" sizes="16x16" href="img/favicons/icon16.png">
+  		<link rel="icon" type="image/svg+xml" sizes="any" href="img/favicons/iconSVG.svg"> 
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	</head>
+	<body>
+		
+		<!-- модальное окно с документами-->
+			<template id = "modal-win-documents">
+			
+					<div v-show = "showed" @click.self = "hideWin" class = "modal_owerlay">
+						<div v-show = "showed" class = "modal_win modal_win_doc"> 
+							<div @click.self = "hideWin" class = "close_modal"></div>	
+							<h2>Документы (Резервы)</h2>
+							<div v-show = "showLoad" style = "display:none;" class = "loadline" ></div>
+							<div class = "documents">
+								<div class = "docElement docElementHead">
+									<div class = "docTd docID">Id</div>
+									<div class = "docTd docDate">Дата</div>
+									<div class = "docTd docWeight">Вес</div>
+									<div class = "docTd docSumm">Сумма($)</div>
+								</div>				
+
+								<div v-for = "(item, index, key) in documentList" @click.stop = "reservPosition(item,index)" class = "docElement docElementBody" :class = "{docElementActive:item.showGoods}">
+									
+									<div class = "docTd docID">{{item.properties.id}}</div>
+									<div class = "docTd docDate">{{item.properties.date}}</div>
+									<div class = "docTd docWeight">{{item.properties.weight}}</div>
+									<div class = "docTd docSumm">{{item.properties.summa}}</div>
+									<div class = "docTd docManage">
+										<div class="circleLoader" v-show = "item.showCircle" style="display: none;"></div>
+										<div  class = "openR" :class = "{open:item.showGoods}"></div>
+									</div>
+									<div v-show = "item.showGoods" class = " tovarsInfo" >
+										<div class = "goodsPosition goodsPositionHead">
+											
+											<div class = "goodTd goodName">Наименование</div>
+											<div class = "goodTd goodCount">Количество</div>
+											<div class = "goodTd goodSumm">Цена за ед.</div>
+											<div class = "goodTd goodRealSumm">Сумма</div>
+											<div class = "goodTd goodZak">Заказ</div>
+											<div class = "goodTd goodStat">Статус</div>
+										</div>
+
+										<div v-for = "(item, index, key) in item.goods" class = "goodsPosition">
+											<div class = "goodTd goodName">{{item.properties.name}}</div>
+											<div class = "goodTd goodCount">{{item.properties.quantity}}</div>
+											<div class = "goodTd goodSumm">{{item.properties.summa}}</div>
+											<div class = "goodTd goodRealSumm">{{item.properties.quantity * item.properties.summa}}</div>
+											<div class = "goodTd goodZak">{{item.properties.summaCur}}</div>
+											<div class = "goodTd goodStat">{{item.properties.orderStatus}}</div>
+										</div>
+
+										<div class = "btn_wraper btn_wraper_doc">
+											<button :disabled = "deleteElemStop" class = "btn_new btn_red" @click.stop = "dellReserv(item.properties.id)" >Удалить</button>
+										</div>
+									</div>
+									
+								</div>								
+							</div>
+						</div>
+					</div>
+			</template>
+
+		<!-- Модальное окно с товаром-->
+			<template id = "modal-win">
+			
+					<div v-show = "showed" @click.self = "hideWin" class = "modal_owerlay">
+						<div v-show = "showed" class = "modal_win"> 
+							<div @click.self = "hideWin" class = "close_modal"></div>	
+
+							<carousel :data="imgData" indicator-trigger="hover"></carousel>
+							<table class = "tovar-info-table">
+								<tr v-for = "(item, index, key) in tovarInfo">
+									<td v-html="index" ></td>
+									<td v-html="item"></td>
+								</tr>
+							</table>
+						</div>
+					</div>
+			</template>
+		<!-- Модальное окно с товаром (корзина)-->
+			<template id = "modal-win-bscet">
+			
+					<div v-show = "showed" @click.self = "hideWin" class = "modal_owerlay">
+						<div v-show = "showed" class = "modal_win"> 
+							<div @click.self = "hideWin" class = "close_modal"></div>	
+							<div class = "bascet_tovars">
+								<div class = "bascet_tovar_vraper bascet_tovar_vraper_head">
+									<div class = "tovarBlk">Товар</div>
+									<div class = "count">Количество</div>
+									<div class = "price priceBax">Цена в $</div>
+									<div class = "price priceRub">Цена в р.</div>
+									<div class = "price priceRubSubtot">Сумма в $</div>
+									<div class = "price priceBaxSubtot">Сумма в р.</div>
+									<div class = "manadge"></div>
+								</div>
+
+								<template v-if = "bascetCount > 0">
+								<div v-for = "(item, index, key) in bascet" class = "bascet_tovar_vraper">
+									<div class = "tovarBlk">
+										<picture>
+											<img :src="item.img" alt="">
+										</picture>
+										<h3><span>{{item.name}}</span></h3>
+									</div>
+									<div class = "count">
+										<input type = "number" min = "1" @change = "recalcBascet" v-model="item.count" >
+									</div>
+
+									<div class = "price priceBax"><span>{{item.priceBax}} $</span></div>
+									<div class = "price priceRub"><span>{{item.price}} р.</span></div>
+									
+									<div class = "price priceRubSubtot"><span>{{item.subTotalBax}} $</span></div>
+									<div class = "price priceBaxSubtot"><span>{{item.subTotal}} р.</span></div>
+
+									<div class = "manadge">
+										<span class = "deletedBascet" @click = "item.count = 0; recalcBascet();">удалить</span>
+									</div>
+ 
+								</div>
+								</template>
+								<h2 v-else>Ваша корзина пуста</h2>
+
+								<div v-if = "bascetCount > 0" class = "bascetControl">
+									<div class = "pricing">
+										<strong>{{bascetCount}}</strong> товаров на сумму <strong>{{bascetSumm}} р. ({{bascetSummBax}}$)</strong>
+									</div>
+
+									<div class = "buttons">
+										<div v-show = "showTovarloader" class = "circleLoader"></div>
+										<button :disabled = "showTovarloader" class = "btn_new"  @click = "createReserv">Оформить заказ</button>
+										<button :disabled = "showTovarloader" class = "btn_new" @click = "clearBascet">Очистить корзину</button>
+									</div>
+
+								</div>
+							</div>
+						</div>
+					</div>
+
+					
+				
+			</template>
+
+		<!-- Шаблон шапки -->
+		<template id = "workhead-template">
+			<div id = "workHead" class="header__row">
+				<div class="col-lg">
+	
+				<div class="block-item d-flex">
+	
+					<div class="block-item__logo">
+						<a href="#" class="logo__svg"></a>
+					</div>
+	
+					<div class="block-name-menu d-flex">
+					<div class="block-name">
+						<p class="block-name__text">
+							<a href="#" class="block-name__text-link-bax">{{ baxKurs }}</a>
+							<a href="#" class="block-name__text-link">{{ companyLogin }}</a>
+							
+						</p>
+					</div>
+				
+					<nav class="menu__body">
+						<ul class="menu__list d-flex">
+							<li class = "head_btn_bascet">
+								<a href="#" @click.stop = "showBascet" class="menu__link menu__link_basket">
+								Корзина 
+								<span class="menu__link_basket-numeral">{{ bascetCount }}</span>
+								</a>
+							</li>
+							<li  class = "head_btn_docs"><a href="#" @click = "openDoc" class="menu__link menu__link_doc">Документы</a></li>
+							<li  class = "head_btn_exit"><a href="#" @click = "relogin" class="menu__link menu__link_out">Выход</a></li>
+							
+							<li v-show = "mobileBurgerShow" class = "head_btn_menu"><a href="#"   @click.stop = "todgleMobileMenu" class="menu__link menu__link_burger" :class = "{menu__link_burger_close:mobileMenuShow}">Каталог</a></li>
+						
+						</ul>
+					</nav>
+					</div>
+	
+					</div>
+	
+				</div>
+			</div>
+		</template>
+
+		<!-- Шаблон навигационного блока -->
+		<template id = "catalog-navigation">
+			<div class="admin__block-left" :class = "{mobile_menu:mobileMenu, mobile_menu_show:mobileMenuShow}">
+
+				<div class="admin__block-search">
+					<form class="block__form form-block" @submit.prevent = "searchSend" action="#">
+ 						<div class="form-block__item admin__form-block">
+  						<input type="text" name="search" v-model = "searchStr" placeholder="Поиск товаров" class="input input-search">
+  						<a href="#" @click.self = "searchSend" class="sub-search"></a>
+ 						</div>
+					</form>
+				</div>	
+
+				<div id = "catalogNavigation" class="admin__block-menu" >
+
+					<ul class="admin__menu">
+
+						<li v-for = "(item, index) in catalogStructure"  class="list-elem" :key="item.id" :data-id="item.id"><a :class = "{active:item.active}" @click = "openSub(index,-1)" href="#">{{item.name}}</a>
+							<ul :class = "{active:item.active}" id="submenu" class="admin__sub-menu">
+								<li v-for = "(itemsub, indexsub) in item.subcat" ><a @click = "openSub(index,indexsub)" :class = "{ active: itemsub.active }" href="#">{{itemsub.name}}</a>
+									<ul :class = "{ active: itemsub.active }" id="submenu2" class="sub__sub-menu">
+										<li v-for = "(itemsubsub, indexsubsub) in itemsub.subcat"><a :class = "{ active: itemsubsub.active }" href="#" @click = "selectList(item.name,itemsub.name,itemsubsub.name,itemsubsub.id)" >{{itemsubsub.name}}</a></li>
+									</ul>
+								</li>
+							</ul>	
+						</li>	
+					</ul>
+				</div>
+			</div>
+		</template>
+
+		<!-- Шаблон блока товаров -->
+		<template id = "tovars-input">
+			<!-- Правый Блок -->
+			<div id = "tovarInput" class="admin__block-right">
+
+				<div  class="admin__block-item">
+					<div class="block-item__menu d-flex">
+						<div class = "left">	{{ listname }}</div>
+						<div class = "right">
+							<label for = "filternal" class = "filterlabel">
+								<input :disabled = "showLoad" v-model = "showReservOnly" type = "checkbox" id = "filternal" name = "filternal">
+								 <span>в наличии</span>
+							</label>
+							<a href="#" @click.stop = "tovarSotring" class="menu-sort" :class = "sort == 'DESC' ? 'sortDSC':''">Сортировать по цене</a>
+						</div>
+					</div>
+
+					<div v-show = "showLoad" style = "display:none;" class = "loadline" ></div>
+
+					<h3 v-if = "(categoryGoods.length == 0) && (showReservOnly == true)&& (showLoad == false)">Товары не найдены, возможно следует снять фильтр "В наличии" или выбрать другую категорию </h3>
+
+					<div v-for = "(item, index) in categoryGoods" :key="item.id" :data-id="item.id" class="wrapper__block-card">
+						<div class="admin__block-card d-flex">
+						
+						<div class = "block-card__wraper">
+							<div class="block-card__left d-flex">
+								<picture>
+									<img class = "tovar_img" :src="item.picture" alt="">
+								</picture>
+								<div class="block-card__text">
+									<div class="block-card__subtitle">		
+										<p>
+											{{ item.name }}
+										</p>
+									</div>
+									
+								</div>
+							</div>
+
+							<div class="block-card__right d-flex">
+								<div class="block-card__info">
+									<p class="info-title">
+										Свободно
+									</p>
+									<p class="info-text">
+										{{ item.svobodno }}
+									</p>
+								</div>
+								<div class="block-card__info">
+									<p class="info-title">
+										Заказ
+									</p>
+									<p class="info-text">
+										{{ item.zakaz }}
+									</p>
+								</div>
+								<div class="block-card__info">
+									<p class="info-title">
+										Транзит.
+									</p>
+									<p class="info-text">
+										{{ item.tranzitCount }}
+									</p>
+								</div>
+								<div class="block-card__info info-price">
+									<p class="info-title">
+										Цена.
+									</p>
+									<p class="info-text">
+										{{ item.price }} $ <br> 
+										<span class = "rparoce">{{ item.priceRub }} Р</span>
+									</p>
+								</div>
+							</div>
+						</div>
+
+						<div class="block-card__btn">
+							<button @click = "toBascet(item.id, 1, item.name, item.priceRub, item.price, item.picture)" class = "btn_new btn_new_icon btn-icon span-basket" >В корзину</button>
+							<button @click = "getTovarInfo(item.id)" class = "btn_new btn_new_icon btn-icon span-info" >О товаре</button>
+						</div>
+
+						</div>
+					</div>
+
+				</div>	
+			</div>
+		</template>
+		
+		
+
+		<div id = "workPanelApp" class="wrapper">
+			<modalbascet></modalbascet>
+			<modalwin></modalwin>
+			<modaldoc></modaldoc>
+
+			<header id="header" class="header">
+				<div class="container">
+					<workhead></workhead>
+				</div>
+			</header>
+
+			<section id="admin-content" class="admin-content">
+				<div class="row">
+					<div class="col-lg">
+						<div class="admin__wrap">
+							<catnavi></catnavi>
+							<tovars></tovars>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+			<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+			<script src="js/vue-carousel.min.js"></script>
+			<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+			
+			<script src="js/component-modaldoc.js"></script>
+			<script src="js/component-modalwin.js"></script>
+			<script src="js/component-modalbascet.js"></script>
+			<script src="js/component-workhead.js"></script>
+			<script src="js/component-catnavi.js"></script>
+			<script src="js/component-tovars.js"></script>
+			<script src="js/main.js"></script>
+			<script src="js/workpanel_components.js"></script>
+	</body>
+</html>
